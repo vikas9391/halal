@@ -45,7 +45,6 @@ class BookingDetailSerializer(BookingSerializer):
         fields = BookingSerializer.Meta.fields + ["contact_email", "contact_phone", "traveler_details"]
 
     def get_traveler_details(self, obj):
-        # Never serialize private passport file URLs to normal traveler responses.
         return [
             {
                 "fullName": t.full_name,
@@ -96,8 +95,9 @@ class BookingCreateSerializer(serializers.Serializer):
             status="pending",
         )
 
-        Traveler.objects.bulk_create([
-            Traveler(booking=booking, **traveler)
-            for traveler in travelers_data
-        ])
+        # FileField/ImageField storage must run through model.save(); bulk_create
+        # bypasses that storage lifecycle and can leave uploaded files unpersisted.
+        for traveler in travelers_data:
+            Traveler.objects.create(booking=booking, **traveler)
+
         return booking
