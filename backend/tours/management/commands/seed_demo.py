@@ -4,15 +4,21 @@ from django.db import transaction
 from destinations.models import Destination
 from tours.models import ItineraryDay, Tour, TourImage
 
-
-IMAGE_PARAMS = "?auto=format&fit=crop&w=1600&q=85"
+# These demo assets are already committed to the frontend repository, so they
+# remain available in production without depending on third-party hotlinking.
+DEMO_IMAGE_BASE = "https://raw.githubusercontent.com/vikas9391/halal/main/frontend/public/"
+DEMO_IMAGES = {
+    "kaaba": DEMO_IMAGE_BASE + "kaaba-night_d708ab92.jpg",
+    "madinah": DEMO_IMAGE_BASE + "madinah-courtyard_bded3f4c.jpeg",
+    "bosnia": DEMO_IMAGE_BASE + "bosnia-mostar_053d512e.jpg",
+}
 
 DESTINATIONS = [
     {
         "slug": "istanbul",
         "name": "Istanbul",
         "country": "Turkey",
-        "hero_image": "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200" + IMAGE_PARAMS,
+        "hero_image": DEMO_IMAGES["bosnia"],
         "short_description": "A mosque-rich city where Ottoman history, Bosphorus views, and halal dining meet.",
         "latitude": 41.0082,
         "longitude": 28.9784,
@@ -21,7 +27,7 @@ DESTINATIONS = [
         "slug": "makkah-madinah",
         "name": "Makkah & Madinah",
         "country": "Saudi Arabia",
-        "hero_image": "https://images.unsplash.com/photo-1564769625905-50e93615e769" + IMAGE_PARAMS,
+        "hero_image": DEMO_IMAGES["kaaba"],
         "short_description": "A carefully planned spiritual journey with time for worship, reflection, and guided visits.",
         "latitude": 21.4225,
         "longitude": 39.8262,
@@ -30,7 +36,7 @@ DESTINATIONS = [
         "slug": "dubai",
         "name": "Dubai",
         "country": "United Arab Emirates",
-        "hero_image": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c" + IMAGE_PARAMS,
+        "hero_image": DEMO_IMAGES["bosnia"],
         "short_description": "Modern Gulf hospitality, skyline experiences, desert landscapes, and abundant halal options.",
         "latitude": 25.2048,
         "longitude": 55.2708,
@@ -39,7 +45,7 @@ DESTINATIONS = [
         "slug": "morocco",
         "name": "Morocco",
         "country": "Morocco",
-        "hero_image": "https://images.unsplash.com/photo-1548013146-72479768bada" + IMAGE_PARAMS,
+        "hero_image": DEMO_IMAGES["bosnia"],
         "short_description": "Marrakech color, historic medinas, mountain scenery, and a rich Muslim heritage.",
         "latitude": 31.6295,
         "longitude": -7.9811,
@@ -48,7 +54,7 @@ DESTINATIONS = [
         "slug": "bali",
         "name": "Bali",
         "country": "Indonesia",
-        "hero_image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4" + IMAGE_PARAMS,
+        "hero_image": DEMO_IMAGES["bosnia"],
         "short_description": "Tropical scenery, peaceful retreats, Muslim-friendly dining, and relaxed private touring.",
         "latitude": -8.3405,
         "longitude": 115.0920,
@@ -69,9 +75,9 @@ TOURS = [
         "summary": "A trial-ready sample itinerary covering Sultanahmet, the Blue Mosque area, Grand Bazaar, Bosphorus, and halal culinary stops.",
         "halal_features": ["prayer_friendly", "certified_halal_food", "no_alcohol_venues", "scholar_led"],
         "images": [
-            ("https://images.unsplash.com/photo-1524231757912-21f4fe3a7200" + IMAGE_PARAMS, "Istanbul skyline and Bosphorus"),
-            ("https://images.unsplash.com/photo-1541432901042-2d8fe8b5a0e7" + IMAGE_PARAMS, "Historic Istanbul street"),
-            ("https://images.unsplash.com/photo-1565031491910-e57fac031c41" + IMAGE_PARAMS, "Istanbul mosque architecture"),
+            (DEMO_IMAGES["bosnia"], "Demo travel destination image"),
+            (DEMO_IMAGES["madinah"], "Historic Muslim destination"),
+            (DEMO_IMAGES["kaaba"], "Spiritual travel destination"),
         ],
         "itinerary": [
             (1, "Welcome to Istanbul", "Airport arrival, hotel check-in, orientation, and evening prayer-friendly dinner."),
@@ -94,8 +100,8 @@ TOURS = [
         "summary": "A sample Umrah package with guided spiritual orientation, hotel transfers, and structured time in Makkah and Madinah.",
         "halal_features": ["prayer_friendly", "certified_halal_food", "scholar_led", "no_alcohol_venues"],
         "images": [
-            ("https://images.unsplash.com/photo-1564769625905-50e93615e769" + IMAGE_PARAMS, "Madinah mosque courtyard"),
-            ("https://images.unsplash.com/photo-1534008757030-27299c4371b6" + IMAGE_PARAMS, "Makkah pilgrimage atmosphere"),
+            (DEMO_IMAGES["kaaba"], "Kaaba at night"),
+            (DEMO_IMAGES["madinah"], "Madinah courtyard"),
         ],
         "itinerary": [
             (1, "Arrival", "Arrival transfer, hotel check-in, orientation, and preparation for worship."),
@@ -121,8 +127,8 @@ TOURS = [
         "summary": "A family-friendly Dubai sample package with skyline views, desert scenery, shopping, and halal dining.",
         "halal_features": ["prayer_friendly", "certified_halal_food", "gender_separated_options", "no_alcohol_venues"],
         "images": [
-            ("https://images.unsplash.com/photo-1512453979798-5ea266f8880c" + IMAGE_PARAMS, "Dubai skyline"),
-            ("https://images.unsplash.com/photo-1518684079-3c830dcef090" + IMAGE_PARAMS, "Dubai desert landscape"),
+            (DEMO_IMAGES["bosnia"], "Family travel destination"),
+            (DEMO_IMAGES["madinah"], "Muslim-friendly destination"),
         ],
         "itinerary": [
             (1, "Arrival & Marina", "Airport transfer, hotel check-in, and relaxed evening by the marina."),
@@ -145,8 +151,8 @@ TOURS = [
         "summary": "A colorful sample route through Marrakech, historic medinas, local markets, and Moroccan Muslim heritage.",
         "halal_features": ["prayer_friendly", "certified_halal_food", "no_alcohol_venues"],
         "images": [
-            ("https://images.unsplash.com/photo-1548013146-72479768bada" + IMAGE_PARAMS, "Moroccan architecture"),
-            ("https://images.unsplash.com/photo-1489749798305-4fea3ae63d43" + IMAGE_PARAMS, "Moroccan market"),
+            (DEMO_IMAGES["bosnia"], "Historic destination architecture"),
+            (DEMO_IMAGES["madinah"], "Heritage travel scene"),
         ],
         "itinerary": [
             (1, "Marrakech Arrival", "Airport pickup and relaxed medina orientation."),
@@ -171,8 +177,8 @@ TOURS = [
         "summary": "A relaxed Bali sample journey combining nature, private touring, Muslim-friendly dining, and quiet resort time.",
         "halal_features": ["prayer_friendly", "certified_halal_food", "no_alcohol_venues"],
         "images": [
-            ("https://images.unsplash.com/photo-1537996194471-e657df975ab4" + IMAGE_PARAMS, "Bali temple and tropical landscape"),
-            ("https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8" + IMAGE_PARAMS, "Bali rice terraces"),
+            (DEMO_IMAGES["bosnia"], "Tropical travel placeholder"),
+            (DEMO_IMAGES["kaaba"], "Muslim-friendly travel placeholder"),
         ],
         "itinerary": [
             (1, "Arrival", "Airport transfer, resort check-in, and welcome dinner."),
