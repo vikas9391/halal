@@ -6,12 +6,14 @@ User = get_user_model()
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    """Mirrors types/index.ts -> Profile { id, fullName, email, phone }"""
+    """Authenticated profile returned to the frontend."""
+
+    is_staff = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "full_name", "email", "phone"]
-        read_only_fields = ["id", "email"]
+        fields = ["id", "full_name", "email", "phone", "is_staff"]
+        read_only_fields = ["id", "email", "is_staff"]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -37,12 +39,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """SimpleJWT already uses USERNAME_FIELD (email) — this just documents it
-    and lets us extend the payload later if needed."""
-
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["email"] = user.email
         token["fullName"] = user.full_name
+        token["isStaff"] = user.is_staff
         return token
