@@ -1,4 +1,6 @@
-from rest_framework import viewsets, permissions
+import json
+
+from rest_framework import parsers, viewsets, permissions
 from rest_framework.response import Response
 
 from .models import Booking
@@ -6,13 +8,8 @@ from .serializers import BookingSerializer, BookingDetailSerializer, BookingCrea
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    """
-    GET  /api/v1/bookings/          (mine, or all if staff)
-    POST /api/v1/bookings/
-    GET  /api/v1/bookings/<id>/
-    """
-
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_queryset(self):
         user = self.request.user
@@ -27,7 +24,19 @@ class BookingViewSet(viewsets.ModelViewSet):
         return BookingSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={"request": request})
+        data = request.data.copy()
+        raw_travelers = data.get("travelers", "[]")
+        try:
+            travelers = json.loads(raw_travelers) if isinstance(raw_travelers, str) else raw_travelers
+        except (TypeError, json.JSONDecodeError):
+            return Response({"travelers": ["Invalid traveler data."]}, status=400)
+
+        for index, traveler in enumerate(travelers):
+            traveler["passport_document"] = request.FILES.get(f"traveler_{index}_passport_document")
+            traveler["passport_photo"] = request.FILES.get(f"traveler_{index}_passport_photo")
+        data["travelers"] = travelers
+
+        serializer = self.get_serializer(data=data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
         return Response(BookingDetailSerializer(booking).data, status=201)
