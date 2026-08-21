@@ -20,6 +20,8 @@ from rest_framework.views import APIView
 from bookings.models import Booking
 from core.emails import send_booking_confirmation
 
+from .models import Payment
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -56,9 +58,17 @@ class CreateOrderView(APIView):
             # Local dev without Razorpay creds configured — return a stub so the
             # frontend flow (open Checkout) still has something to call.
             logger.warning("Razorpay not configured — returning stub order for booking %s", booking.id)
+            stub_order_id = f"stub_order_{booking.id}"
+            Payment.objects.create(
+                booking=booking,
+                razorpay_order_id=stub_order_id,
+                amount=amount_paise,
+                currency=booking.tour.currency,
+                status="created",
+            )
             return Response(
                 {
-                    "orderId": f"stub_order_{booking.id}",
+                    "orderId": stub_order_id,
                     "amount": amount_paise,
                     "currency": booking.tour.currency,
                     "keyId": settings.RAZORPAY_KEY_ID or "rzp_test_stub",
@@ -72,6 +82,13 @@ class CreateOrderView(APIView):
                 "receipt": f"booking-{booking.id}",
                 "notes": {"booking_id": str(booking.id)},
             }
+        )
+        Payment.objects.create(
+            booking=booking,
+            razorpay_order_id=order["id"],
+            amount=order["amount"],
+            currency=order["currency"],
+            status="created",
         )
         return Response(
             {
@@ -105,10 +122,15 @@ class RazorpayWebhookView(APIView):
 
         payload = request.data
         event = payload.get("event")
-        notes = (
-            payload.get("payload", {}).get("payment", {}).get("entity", {}).get("notes", {})
-        )
+        payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+        notes = payment_entity.get("notes", {})
         booking_id = notes.get("booking_id")
+        razorpay_order_id = payment_entity.get("order_id")
+        razorpay_payment_id = payment_entity.get("id", "")
+
+        payment = None
+        if razorpay_order_id:
+            payment = Payment.objects.filter(razorpay_order_id=razorpay_order_id).first()
 
         if event == "payment.captured" and booking_id:
             try:
@@ -117,9 +139,19 @@ class RazorpayWebhookView(APIView):
                 logger.warning("Webhook: booking %s not found", booking_id)
                 return Response(status=status.HTTP_200_OK)
 
+            if payment is not None:
+                payment.razorpay_payment_id = razorpay_payment_id
+                payment.status = "captured"
+                payment.save(update_fields=["razorpay_payment_id", "status", "updated_at"])
+
             if booking.status != "confirmed":
                 booking.status = "confirmed"
                 booking.save(update_fields=["status"])
                 send_booking_confirmation(booking)
+
+        elif event == "payment.failed" and payment is not None:
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.status = "failed"
+            payment.save(update_fields=["razorpay_payment_id", "status", "updated_at"])
 
         return Response(status=status.HTTP_200_OK)

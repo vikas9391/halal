@@ -1,9 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
 from rest_framework.permissions import AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Tour
-from .serializers import TourListSerializer, TourDetailSerializer
+from .models import Tour, TourImage
+from .serializers import TourListSerializer, TourDetailSerializer, TourImageWriteSerializer
 from .filters import TourFilter
 
 
@@ -21,3 +21,11 @@ class TourViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_serializer_class(self):
         return TourDetailSerializer if self.action == "retrieve" else TourListSerializer
+
+
+class TourImageViewSet(viewsets.ModelViewSet):
+    """POST/DELETE /api/v1/tour-images/ — staff only, for AdminGallery.tsx."""
+
+    queryset = TourImage.objects.select_related("tour").all()
+    serializer_class = TourImageWriteSerializer
+    permission_classes = [permissions.IsAdminUser]

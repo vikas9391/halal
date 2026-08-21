@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Enquiry
+from .models import Enquiry, SiteSettings
 
 
 class EnquirySerializer(serializers.ModelSerializer):
@@ -15,3 +15,9 @@ class EnquirySerializer(serializers.ModelSerializer):
         if len(value) < 10:
             raise serializers.ValidationError("Tell us a bit more about your trip")
         return value
+
+
+class SiteSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteSettings
+        fields = ["phone", "email", "whatsapp"]

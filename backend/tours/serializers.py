@@ -10,6 +10,14 @@ class TourImageSerializer(serializers.ModelSerializer):
         fields = ["id", "url", "alt"]
 
 
+class TourImageWriteSerializer(serializers.ModelSerializer):
+    """POST/DELETE /api/v1/tour-images/ — staff-only gallery admin writes."""
+
+    class Meta:
+        model = TourImage
+        fields = ["id", "tour", "url", "alt"]
+
+
 class ItineraryDaySerializer(serializers.ModelSerializer):
     class Meta:
         model = ItineraryDay
