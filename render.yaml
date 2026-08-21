@@ -15,9 +15,7 @@ services:
       - key: ALLOWED_HOSTS
         value: halal-tours-api.onrender.com
       - key: DATABASE_URL
-        fromDatabase:
-          name: halal-tours-db
-          property: connectionString
+        sync: false
       - key: CORS_ALLOWED_ORIGINS
         value: https://halal-tours-web.onrender.com,http://localhost:5173
       - key: FRONTEND_URL
@@ -32,6 +30,12 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         value: bookings@halal-travel.com
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
 
   - type: web
     name: halal-tours-web
@@ -46,7 +50,3 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://halal-tours-api.onrender.com/api/v1
-
-databases:
-  - name: halal-tours-db
-    plan: free
