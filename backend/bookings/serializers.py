@@ -59,6 +59,21 @@ class BookingDetailSerializer(BookingSerializer):
         ]
 
 
+class BookingAdminSerializer(BookingDetailSerializer):
+    customer = serializers.SerializerMethodField()
+
+    class Meta(BookingDetailSerializer.Meta):
+        fields = BookingDetailSerializer.Meta.fields + ["customer", "created_at"]
+
+    def get_customer(self, obj):
+        return {
+            "id": obj.user_id,
+            "fullName": obj.user.full_name,
+            "email": obj.user.email,
+            "phone": obj.user.phone,
+        }
+
+
 class BookingCreateSerializer(serializers.Serializer):
     tour_slug = serializers.SlugField()
     departure_date = serializers.DateField()
@@ -82,7 +97,6 @@ class BookingCreateSerializer(serializers.Serializer):
         request = self.context["request"]
         tour = Tour.objects.get(slug=validated_data["tour_slug"])
         travelers_data = validated_data.pop("travelers")
-
         booking = Booking.objects.create(
             user=request.user,
             tour=tour,
@@ -94,10 +108,6 @@ class BookingCreateSerializer(serializers.Serializer):
             total_price=tour.price * len(travelers_data),
             status="pending",
         )
-
-        # FileField/ImageField storage must run through model.save(); bulk_create
-        # bypasses that storage lifecycle and can leave uploaded files unpersisted.
         for traveler in travelers_data:
             Traveler.objects.create(booking=booking, **traveler)
-
         return booking
