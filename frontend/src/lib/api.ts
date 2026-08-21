@@ -55,4 +55,5 @@ export const adminApi={
   updateSettings:async(data:{phone?:string;email?:string;whatsapp?:string})=>(await api.patch<{phone:string;email:string;whatsapp:string}>("/settings/",data)).data,
   addTourImage:async(data:{tour:number;url:string;alt:string})=>(await api.post<TourImage>("/tour-images/",data)).data,
   deleteTourImage:async(id:number)=>api.delete(`/tour-images/${id}/`),
+  uploadImage:async(file:File,folder="halal-tours/catalog")=>{const form=new FormData();form.append("file",file);form.append("folder",folder);return(await api.post<{url:string;public_id:string;width:number;height:number}>("/media/upload/",form)).data;},
 };
