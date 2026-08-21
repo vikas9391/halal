@@ -2,17 +2,61 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 export const api = axios.create({ baseURL: API_BASE_URL });
+
+let refreshing = false;
+let refreshQueue: Array<(token: string | null) => void> = [];
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status !== 401 || original?._retry || original?.url?.includes("/auth/")) {
+      return Promise.reject(error);
+    }
+
+    original._retry = true;
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) return Promise.reject(error);
+
+    if (refreshing) {
+      const token = await new Promise<string | null>((resolve) => refreshQueue.push(resolve));
+      if (!token) return Promise.reject(error);
+      original.headers.Authorization = `Bearer ${token}`;
+      return api(original);
+    }
+
+    refreshing = true;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh: refreshToken });
+      const access = response.data.access as string;
+      localStorage.setItem("access_token", access);
+      refreshQueue.forEach((resolve) => resolve(access));
+      refreshQueue = [];
+      original.headers.Authorization = `Bearer ${access}`;
+      return api(original);
+    } catch (refreshError) {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      refreshQueue.forEach((resolve) => resolve(null));
+      refreshQueue = [];
+      return Promise.reject(refreshError);
+    } finally {
+      refreshing = false;
+    }
+  }
+);
+
 export interface Destination { id: number; slug: string; name: string; country: string; hero_image: string; short_description: string; latitude: number; longitude: number; }
 export interface TourImage { id: number; url: string; alt: string; }
 export interface ItineraryDay { id: number; day: number; title: string; description: string; }
 export interface Tour { id: number; slug: string; title: string; destination: { id: number; slug: string; name: string; country: string }; duration_days: number; duration_nights: number; price: number; currency: string; rating: number; review_count: number; cover_image: string; images: TourImage[]; halal_features: string[]; summary: string; itinerary: ItineraryDay[]; departure_city: string; }
-export interface User { id: number; full_name: string; email: string; phone: string; }
+export interface User { id: number; full_name: string; email: string; phone: string; is_staff: boolean; }
 
 export const toursApi = { list: async (params?: Record<string, string | number>) => (await api.get<Tour[]>("/tours/", { params })).data, get: async (slug: string) => (await api.get<Tour>(`/tours/${slug}/`)).data };
 export const destinationsApi = { list: async () => (await api.get<Destination[]>("/destinations/")).data, get: async (slug: string) => (await api.get<Destination>(`/destinations/${slug}/`)).data };
