@@ -9,6 +9,8 @@ import Admin from "./pages/Admin";
 import AdminGallery from "./pages/AdminGallery";
 import AdminSettings from "./pages/AdminSettings";
 import AdminProfile from "./pages/AdminProfile";
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Destinations from "./pages/Destinations";
 import About from "./pages/About";
@@ -17,21 +19,21 @@ import Journey from "./pages/Journey";
 import Traveler from "./pages/Traveler";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/destinations"} component={Destinations} />
-      <Route path={"/about"} component={About} />
-      <Route path={"/contact"} component={Contact} />
-      <Route path={"/admin"} component={Admin} />
-      <Route path={"/admin/media"} component={AdminGallery} />
-      <Route path={"/admin/settings"} component={AdminSettings} />
-      <Route path={"/admin/profile"} component={AdminProfile} />
-      <Route path={"/journeys/:slug"} component={Journey} />
-      <Route path={"/traveler"} component={Traveler} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/destinations" component={Destinations} />
+      <Route path="/about" component={About} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/admin/media" component={AdminGallery} />
+      <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/profile" component={AdminProfile} />
+      <Route path="/journeys/:slug" component={Journey} />
+      <Route path="/traveler" component={Traveler} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -40,10 +42,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
