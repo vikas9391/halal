@@ -5,30 +5,40 @@ from .models import Booking, Traveler
 
 
 class TravelerInputSerializer(serializers.Serializer):
-    """Mirrors validations.ts -> travelerSchema"""
-
     full_name = serializers.CharField(min_length=2)
     passport_number = serializers.CharField(min_length=4)
     date_of_birth = serializers.DateField()
+    passport_status = serializers.ChoiceField(choices=Traveler.PASSPORT_STATUS_CHOICES)
+    mobility_assistance = serializers.ChoiceField(choices=Traveler.MOBILITY_CHOICES)
+    passport_document = serializers.FileField()
+    passport_photo = serializers.ImageField()
+
+    def validate_passport_document(self, value):
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("Passport file must be 10 MB or smaller.")
+        if value.content_type not in {"application/pdf", "image/jpeg", "image/png", "image/webp"}:
+            raise serializers.ValidationError("Passport must be a PDF, JPG, PNG, or WebP file.")
+        return value
+
+    def validate_passport_photo(self, value):
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Passport photo must be 5 MB or smaller.")
+        if value.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+            raise serializers.ValidationError("Passport photo must be a JPG, PNG, or WebP image.")
+        return value
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    """Read shape — mirrors types/index.ts -> Booking exactly.
-    NOTE: `travelers` here is a COUNT (number), matching the TS type;
-    see BookingDetailSerializer for the full nested traveler list."""
-
     tour_slug = serializers.SlugRelatedField(source="tour", slug_field="slug", read_only=True)
     travelers = serializers.IntegerField(source="travelers_count", read_only=True)
     total_price = serializers.FloatField()
 
     class Meta:
         model = Booking
-        fields = ["id", "tour_slug", "status", "travelers", "departure_date", "total_price"]
+        fields = ["id", "tour_slug", "status", "travelers", "departure_date", "total_price", "payment_type", "payment_method"]
 
 
 class BookingDetailSerializer(BookingSerializer):
-    """Extra detail view with full traveler records, contact info."""
-
     traveler_details = serializers.SerializerMethodField()
 
     class Meta(BookingSerializer.Meta):
@@ -40,24 +50,32 @@ class BookingDetailSerializer(BookingSerializer):
                 "fullName": t.full_name,
                 "passportNumber": t.passport_number,
                 "dateOfBirth": t.date_of_birth,
+                "passportStatus": t.passport_status,
+                "mobilityAssistance": t.mobility_assistance,
+                "passportDocument": t.passport_document.url if t.passport_document else None,
+                "passportPhoto": t.passport_photo.url if t.passport_photo else None,
             }
             for t in obj.travelers.all()
         ]
 
 
 class BookingCreateSerializer(serializers.Serializer):
-    """Write shape — mirrors validations.ts -> bookingSchema exactly:
-    { tourSlug, departureDate, travelers: TravelerDraft[], contactEmail, contactPhone }"""
-
     tour_slug = serializers.SlugField()
     departure_date = serializers.DateField()
     travelers = TravelerInputSerializer(many=True)
     contact_email = serializers.EmailField()
     contact_phone = serializers.CharField(min_length=7)
+    payment_type = serializers.ChoiceField(choices=Booking.PAYMENT_TYPE_CHOICES)
+    payment_method = serializers.ChoiceField(choices=Booking.PAYMENT_METHOD_CHOICES)
 
     def validate_tour_slug(self, value):
         if not Tour.objects.filter(slug=value).exists():
             raise serializers.ValidationError("Tour not found.")
+        return value
+
+    def validate_travelers(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one traveler is required.")
         return value
 
     def create(self, validated_data):
@@ -71,18 +89,12 @@ class BookingCreateSerializer(serializers.Serializer):
             departure_date=validated_data["departure_date"],
             contact_email=validated_data["contact_email"],
             contact_phone=validated_data["contact_phone"],
+            payment_type=validated_data["payment_type"],
+            payment_method=validated_data["payment_method"],
             total_price=tour.price * len(travelers_data),
             status="pending",
         )
-        Traveler.objects.bulk_create(
-            [
-                Traveler(
-                    booking=booking,
-                    full_name=t["full_name"],
-                    passport_number=t["passport_number"],
-                    date_of_birth=t["date_of_birth"],
-                )
-                for t in travelers_data
-            ]
-        )
+        Traveler.objects.bulk_create([
+            Traveler(booking=booking, **traveler) for traveler in travelers_data
+        ])
         return booking
