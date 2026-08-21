@@ -3,7 +3,7 @@ import { Mail, MessageCircle, Phone, Save, Settings2, ShieldCheck } from "lucide
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
+// import { trpc } from "@/lib/trpc";
 
 export default function AdminSettings() {
   const { user } = useAuth();

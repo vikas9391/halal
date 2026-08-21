@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { trpc } from "@/lib/trpc";
+import { bookingsApi } from "@/lib/api";
 
 export type Trip = {
   id: number;
