@@ -16,26 +16,22 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status !== 401 || original?._retry || original?.url?.includes("/auth/")) {
-      return Promise.reject(error);
-    }
-
+    if (error.response?.status !== 401 || original?._retry || original?.url?.includes("/auth/")) return Promise.reject(error);
     original._retry = true;
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) return Promise.reject(error);
-
     if (refreshing) {
       const token = await new Promise<string | null>((resolve) => refreshQueue.push(resolve));
       if (!token) return Promise.reject(error);
       original.headers.Authorization = `Bearer ${token}`;
       return api(original);
     }
-
     refreshing = true;
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh: refreshToken });
       const access = response.data.access as string;
       localStorage.setItem("access_token", access);
+      if (response.data.refresh) localStorage.setItem("refresh_token", response.data.refresh as string);
       refreshQueue.forEach((resolve) => resolve(access));
       refreshQueue = [];
       original.headers.Authorization = `Bearer ${access}`;
@@ -88,3 +84,52 @@ export const paymentsApi = {
 
 export const enquiriesApi = { create: async (data: { name: string; email: string; phone?: string; message: string }) => (await api.post("/enquiries/", data)).data };
 export const reviewsApi = { list: async (tourSlug: string) => (await api.get("/reviews/", { params: { tour: tourSlug } })).data, create: async (data: { tour_slug: string; author_name: string; rating: number; comment: string }) => (await api.post("/reviews/", data)).data };
+
+export type AdminTourPayload = {
+  destination: number;
+  slug: string;
+  title: string;
+  duration_days: number;
+  duration_nights: number;
+  price: number;
+  currency: string;
+  rating: number;
+  review_count: number;
+  cover_image: string;
+  halal_features: string[];
+  summary: string;
+  departure_city: string;
+  images: Array<{ url: string; alt: string }>;
+  itinerary: Array<{ day: number; title: string; description: string }>;
+};
+
+export type AdminSummary = {
+  bookings: { total: number; pending: number; confirmed: number; cancelled: number };
+  customers: number;
+  enquiries: number;
+  payments: { total: number; captured: number; failed: number };
+};
+
+export type AdminEnquiry = { id: number; name: string; email: string; phone: string; message: string; created_at: string; handled: boolean };
+export type AdminCustomer = { id: number; full_name: string; email: string; phone: string; is_staff: boolean; date_joined: string; booking_count: number };
+export type AdminPayment = { id: number; booking_id: number; customer_name: string; customer_email: string; tour_slug: string; razorpay_order_id: string; razorpay_payment_id: string; amount: number; currency: string; status: string; created_at: string; updated_at: string };
+
+export const adminApi = {
+  summary: async () => (await api.get<AdminSummary>("/admin/summary/")).data,
+  tours: async () => (await api.get<Tour[]>("/tours/" )).data,
+  createTour: async (data: AdminTourPayload) => (await api.post<Tour>("/tours/", data)).data,
+  updateTour: async (slug: string, data: Partial<AdminTourPayload>) => (await api.patch<Tour>(`/tours/${slug}/`, data)).data,
+  deleteTour: async (slug: string) => api.delete(`/tours/${slug}/`),
+  destinations: async () => (await api.get<Destination[]>("/destinations/")).data,
+  createDestination: async (data: Omit<Destination, "id">) => (await api.post<Destination>("/destinations/", data)).data,
+  updateDestination: async (slug: string, data: Partial<Omit<Destination, "id" | "slug">>) => (await api.patch<Destination>(`/destinations/${slug}/`, data)).data,
+  deleteDestination: async (slug: string) => api.delete(`/destinations/${slug}/`),
+  bookings: async () => (await api.get("/bookings/")).data,
+  updateBooking: async (id: number, data: { status: "pending" | "confirmed" | "cancelled" }) => (await api.patch(`/bookings/${id}/`, data)).data,
+  enquiries: async () => (await api.get<AdminEnquiry[]>("/admin/enquiries/")).data,
+  updateEnquiry: async (id: number, data: { handled: boolean }) => (await api.patch<AdminEnquiry>(`/admin/enquiries/${id}/`, data)).data,
+  customers: async () => (await api.get<AdminCustomer[]>("/admin/customers/")).data,
+  payments: async () => (await api.get<AdminPayment[]>("/admin/payments/")).data,
+  settings: async () => (await api.get<{ phone: string; email: string; whatsapp: string }>("/settings/")).data,
+  updateSettings: async (data: { phone?: string; email?: string; whatsapp?: string }) => (await api.patch<{ phone: string; email: string; whatsapp: string }>("/settings/", data)).data,
+};
