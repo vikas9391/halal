@@ -2,6 +2,7 @@ from io import BytesIO
 
 import cloudinary
 import cloudinary.uploader
+from django.conf import settings
 from PIL import Image, UnidentifiedImageError
 from rest_framework import generics, permissions
 from rest_framework.response import Response
@@ -66,12 +67,18 @@ class CloudinaryImageUploadView(APIView):
             return Response({"file": ["The uploaded file is not a valid image."]}, status=400)
 
         if not all([
-            cloudinary.config().cloud_name,
-            cloudinary.config().api_key,
-            cloudinary.config().api_secret,
+            settings.CLOUDINARY_CLOUD_NAME,
+            settings.CLOUDINARY_API_KEY,
+            settings.CLOUDINARY_API_SECRET,
         ]):
             return Response({"detail": "Cloudinary is not configured on the server."}, status=503)
 
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+            api_key=settings.CLOUDINARY_API_KEY,
+            api_secret=settings.CLOUDINARY_API_SECRET,
+            secure=True,
+        )
         result = cloudinary.uploader.upload(
             upload,
             folder=folder,
