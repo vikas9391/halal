@@ -2,7 +2,7 @@ import { motion, type Variants } from "framer-motion";
 import type { ReactNode, CSSProperties } from "react";
 
 type RevealProps = {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   delay?: number;
   y?: number;

@@ -1,21 +1,53 @@
-import { useMemo, useState } from "react";
-import { ChevronRight, Clock3, Compass } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, Compass } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { trpc } from "@/lib/trpc";
-import { matchesTripFilters } from "@shared/trips";
+import { toursApi, type Tour } from "@/lib/api";
 import { SiteHeader, SiteFooter, MobileBookBar } from "@/components/site/SiteChrome";
 import Reveal, { RevealGroup, RevealItem } from "@/components/Reveal";
-import { Price, PtoMetric, ReservationDialog, statusLabels, dateRange, type Trip } from "@/lib/tripUi";
+import { Price, DurationMetric, ReservationDialog, durationLabel } from "@/lib/tripUi";
+
+const FALLBACK_HERO = "/manus-storage/kaaba-night_d708ab92.jpg";
 
 export default function Destinations() {
-  const { data, isLoading, error } = trpc.trips.list.useQuery();
-  const [filter, setFilter] = useState<"all" | "umrah" | "world">("all");
-  const [ptoOnly, setPtoOnly] = useState(false);
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const trips = (data ?? []) as Trip[];
-  const filteredTrips = useMemo(() => trips.filter(trip => matchesTripFilters(trip, filter, ptoOnly)), [filter, ptoOnly, trips]);
-  const heroImage = trips.find(trip => trip.category === "umrah")?.heroImage ?? "/manus-storage/kaaba-night_d708ab92.jpg";
+  const [trips, setTrips] = useState<Tour[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [destinationFilter, setDestinationFilter] = useState<string>("all");
+  const [selectedTrip, setSelectedTrip] = useState<Tour | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    toursApi
+      .list()
+      .then((data) => {
+        if (!cancelled) setTrips(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Departures are temporarily unavailable. Please check back shortly.");
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const destinations = useMemo(
+    () => Array.from(new Set(trips.map((trip) => trip.destination?.name).filter(Boolean))) as string[],
+    [trips]
+  );
+
+  const filteredTrips = useMemo(
+    () =>
+      destinationFilter === "all"
+        ? trips
+        : trips.filter((trip) => trip.destination?.name === destinationFilter),
+    [destinationFilter, trips]
+  );
+
+  const heroImage = trips[0]?.cover_image ?? FALLBACK_HERO;
 
   return (
     <main className="site-shell">
@@ -25,7 +57,7 @@ export default function Destinations() {
         <motion.div className="hero-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <p className="eyebrow eyebrow--light">Umrah & World Journeys</p>
           <h1>Find the time to go.</h1>
-          <p className="hero-copy">Every departure below is an editable planning object—dates, holidays, pricing, and availability evolve without changing the site.</p>
+          <p className="hero-copy">Every departure below is drawn straight from the tour catalog—pricing and availability update without touching the site.</p>
         </motion.div>
       </section>
 
@@ -33,32 +65,39 @@ export default function Destinations() {
         <Reveal as="div" className="departures-header">
           <div><p className="eyebrow">Planning calendar</p><h2>Choose your journey.</h2></div>
         </Reveal>
-        <Reveal as="div" className="filter-bar" aria-label="Trip filters" delay={0.1}>
-          <div className="filter-group">
-            <button className={filter === "all" ? "is-active" : ""} onClick={() => setFilter("all")}>All journeys</button>
-            <button className={filter === "umrah" ? "is-active" : ""} onClick={() => setFilter("umrah")}>Umrah</button>
-            <button className={filter === "world" ? "is-active" : ""} onClick={() => setFilter("world")}>World</button>
-          </div>
-          <button className={ptoOnly ? "pto-filter is-active" : "pto-filter"} onClick={() => setPtoOnly(current => !current)}><Clock3 size={15} /> 4 PTO days or less</button>
-        </Reveal>
+        {destinations.length > 1 ? (
+          <Reveal as="div" className="filter-bar" aria-label="Trip filters" delay={0.1}>
+            <div className="filter-group">
+              <button className={destinationFilter === "all" ? "is-active" : ""} onClick={() => setDestinationFilter("all")}>All journeys</button>
+              {destinations.map((name) => (
+                <button
+                  key={name}
+                  className={destinationFilter === name ? "is-active" : ""}
+                  onClick={() => setDestinationFilter(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          </Reveal>
+        ) : null}
         {isLoading ? <div className="loading-grid"><span /><span /><span /></div> : null}
-        {error ? <p className="error-note">Departures are temporarily unavailable. Please check back shortly.</p> : null}
+        {error ? <p className="error-note">{error}</p> : null}
         <RevealGroup as="div" className="trip-grid">
-          {filteredTrips.map(trip => (
-            <RevealItem key={trip.id} as="article" className={trip.category === "world" ? "trip-card trip-card--world" : "trip-card"}>
-              <div className="trip-image" role="img" aria-label={`${trip.destination} travel scene for ${trip.title}`} style={{ backgroundImage: `linear-gradient(180deg, rgba(5,19,20,.08), rgba(5,19,20,.88)), url(${trip.heroImage || heroImage})` }}>
-                <span className={`status-pill status-pill--${trip.status}`}>{statusLabels[trip.status]}</span>
-                {trip.expressUmrahEligible ? <span className="extension-pill">+ Express Umrah</span> : null}
+          {filteredTrips.map((trip) => (
+            <RevealItem key={trip.id} as="article" className="trip-card">
+              <div className="trip-image" role="img" aria-label={`${trip.destination?.name} travel scene for ${trip.title}`} style={{ backgroundImage: `linear-gradient(180deg, rgba(5,19,20,.08), rgba(5,19,20,.88)), url(${trip.cover_image || heroImage})` }}>
+                {trip.rating ? <span className="status-pill">★ {trip.rating.toFixed(1)} ({trip.review_count})</span> : null}
               </div>
               <div className="trip-body">
-                <p className="trip-location">{trip.destination} · {trip.holidayUsed ?? "Planning window"}</p>
+                <p className="trip-location">{trip.destination?.name}, {trip.destination?.country}</p>
                 <h3>{trip.title}</h3>
-                <p className="trip-dates">{dateRange(trip)} · {trip.durationDays ?? "—"} days</p>
-                <div className="trip-metrics">{trip.category === "world" ? <PtoMetric trip={trip} large /> : <Price trip={trip} emphasis />}{trip.category === "world" ? <Price trip={trip} /> : <PtoMetric trip={trip} />}</div>
-                <p className="trip-description">{trip.shortDescription}</p>
+                <p className="trip-dates">{durationLabel(trip)}</p>
+                <div className="trip-metrics"><Price trip={trip} emphasis /><DurationMetric trip={trip} /></div>
+                <p className="trip-description">{trip.summary}</p>
                 <div className="card-actions">
                   <Link className="card-detail-link" href={`/journeys/${trip.slug}`}>Journey details <ChevronRight size={15} /></Link>
-                  <button className="card-action" onClick={() => setSelectedTrip(trip)}>{statusLabels[trip.status]} <ChevronRight size={16} /></button>
+                  <button className="card-action" onClick={() => setSelectedTrip(trip)}>Reserve <ChevronRight size={16} /></button>
                 </div>
               </div>
             </RevealItem>

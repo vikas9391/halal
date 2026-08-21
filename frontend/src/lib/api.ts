@@ -168,6 +168,18 @@ export const bookingsApi = {
   },
 };
 
+export const enquiriesApi = {
+  create: async (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    message: string;
+  }) => {
+    const response = await api.post("/enquiries/", data);
+    return response.data;
+  },
+};
+
 export const reviewsApi = {
   list: async (tourSlug: string) => {
     const response = await api.get("/reviews/", {

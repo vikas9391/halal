@@ -1,14 +1,99 @@
-import { CalendarDays, ChevronLeft, LogIn, Plane, WalletCards } from "lucide-react";
+import { CalendarDays, ChevronLeft, Plane, Users } from "lucide-react";
 import { Link } from "wouter";
-import { startLogin } from "@/const";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
+import { LoginForm } from "@/components/LoginForm";
+import { bookingsApi } from "@/lib/api";
+
+type Booking = {
+  id: number;
+  tour_slug: string;
+  status: "pending" | "confirmed" | "cancelled";
+  travelers: number;
+  departure_date: string;
+  total_price: number;
+};
 
 export default function Traveler() {
   const { user, loading } = useAuth();
-  const { data: reservations = [], isLoading } = trpc.traveler.reservations.useQuery(undefined, { enabled: Boolean(user) });
-  const { data: payments = [] } = trpc.traveler.payments.useQuery(undefined, { enabled: Boolean(user) });
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setIsLoading(true);
+    bookingsApi
+      .list()
+      .then((data) => {
+        if (!cancelled) setBookings(data as Booking[]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   if (loading) return <main className="traveler-page">Loading your travel space…</main>;
-  if (!user) return <main className="traveler-page traveler-login"><Link href="/"><ChevronLeft size={16} /> Back to journeys</Link><p className="eyebrow">Traveler portal</p><h1>Your journey, in one calm place.</h1><p>Sign in to review your upcoming journey, traveler details, room request, trip announcements, and any payment schedule configured for your reservation.</p><button className="button button--primary" onClick={() => startLogin()}><LogIn size={16} /> Sign in to continue</button></main>;
-  return <main className="traveler-page"><header className="traveler-header"><Link href="/"><ChevronLeft size={16} /> All journeys</Link><span>Signed in as {user.name || user.email}</span></header><p className="eyebrow">Traveler portal</p><h1>Welcome back{user.name ? `, ${user.name.split(" ")[0]}` : ""}.</h1><p className="traveler-sub">Your reservations and trip communications will appear here as they are confirmed.</p>{isLoading ? <div className="traveler-empty">Loading reservations…</div> : reservations.length ? <><div className="traveler-reservations">{reservations.map(({ reservation, trip }) => <article key={reservation.id}><div><p className="eyebrow">{reservation.status}</p><h2>{trip.title}</h2><p><CalendarDays size={15} /> {trip.departureDate ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(trip.departureDate)) : "Date TBC"}</p><p><Plane size={15} /> {reservation.adults} adult{reservation.adults > 1 ? "s" : ""}{reservation.children ? ` · ${reservation.children} children` : ""}</p></div><div className="traveler-status"><span>Reservation status</span><strong>{reservation.status}</strong><span>Room request</span><strong>{reservation.roomPreference || "To be confirmed"}</strong><span>Payment schedule</span><strong><WalletCards size={14} /> {reservation.stripeCheckoutSessionId ? "Available below" : "Shared after confirmation"}</strong></div></article>)}</div>{payments.length ? <section className="traveler-payments"><p className="eyebrow">Deposit activity</p><h2>Stripe payment history</h2><div>{payments.map(payment => <article key={payment.sessionId}><span>{payment.tripTitle}</span><strong>{payment.amountTotal !== null ? new Intl.NumberFormat("en-US", { style: "currency", currency: payment.currency || "USD" }).format(payment.amountTotal / 100) : "Amount pending"}</strong><em>{payment.paymentStatus.replace(/_/g, " ")}</em></article>)}</div></section> : null}</> : <div className="traveler-empty"><Plane /><h2>Your next journey starts with a reservation.</h2><p>Once you submit a reservation while signed in, its status and traveler details will appear here.</p><Link className="button button--primary" href="/destinations">Explore departures</Link></div>}</main>;
+
+  if (!user) {
+    return (
+      <main className="traveler-page traveler-login">
+        <Link href="/"><ChevronLeft size={16} /> Back to journeys</Link>
+        <p className="eyebrow">Traveler portal</p>
+        <h1>Your journey, in one calm place.</h1>
+        <p>Sign in to review your reservations, traveler details, and status updates.</p>
+        <div style={{ maxWidth: 360 }}>
+          <LoginForm />
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="traveler-page">
+      <header className="traveler-header">
+        <Link href="/"><ChevronLeft size={16} /> All journeys</Link>
+        <span>Signed in as {user.full_name || user.email}</span>
+      </header>
+      <p className="eyebrow">Traveler portal</p>
+      <h1>Welcome back{user.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}.</h1>
+      <p className="traveler-sub">Your reservations will appear here as they are confirmed.</p>
+
+      {isLoading ? (
+        <div className="traveler-empty">Loading reservations…</div>
+      ) : bookings.length ? (
+        <div className="traveler-reservations">
+          {bookings.map((booking) => (
+            <article key={booking.id}>
+              <div>
+                <p className="eyebrow">{booking.status}</p>
+                <h2>{booking.tour_slug}</h2>
+                <p><CalendarDays size={15} /> {booking.departure_date ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(booking.departure_date)) : "Date TBC"}</p>
+                <p><Users size={15} /> {booking.travelers} traveler{booking.travelers === 1 ? "" : "s"}</p>
+              </div>
+              <div className="traveler-status">
+                <span>Reservation status</span>
+                <strong>{booking.status}</strong>
+                <span>Total price</span>
+                <strong>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(booking.total_price)}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="traveler-empty">
+          <Plane />
+          <h2>Your next journey starts with a reservation.</h2>
+          <p>Once you submit a reservation while signed in, its status and traveler details will appear here.</p>
+          <Link className="button button--primary" href="/destinations">Explore departures</Link>
+        </div>
+      )}
+    </main>
+  );
 }

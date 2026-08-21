@@ -1,18 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarDays, Check, ChevronRight, Clock3, Moon, Plane, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { trpc } from "@/lib/trpc";
+import { toursApi, type Tour } from "@/lib/api";
 import { SiteHeader, SiteFooter, MobileBookBar } from "@/components/site/SiteChrome";
 import Reveal, { RevealGroup, RevealItem } from "@/components/Reveal";
-import { Price, ReservationDialog, dateRange, getStays, type Trip } from "@/lib/tripUi";
+import { Price, ReservationDialog, durationLabel } from "@/lib/tripUi";
+
+const FALLBACK_HERO = "/manus-storage/kaaba-night_d708ab92.jpg";
 
 export default function Home() {
-  const { data, isLoading } = trpc.trips.list.useQuery();
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const trips = (data ?? []) as Trip[];
-  const flagship = trips.find(trip => trip.slug === "thanksgiving-umrah-2026") ?? trips.find(trip => trip.category === "umrah");
-  const heroImage = flagship?.heroImage ?? "/manus-storage/kaaba-night_d708ab92.jpg";
+  const [trips, setTrips] = useState<Tour[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState<Tour | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    toursApi
+      .list()
+      .then((data) => {
+        if (!cancelled) setTrips(data);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const flagship =
+    trips.find((trip) => trip.slug === "thanksgiving-umrah-2026") ??
+    trips.find((trip) => trip.destination?.name?.toLowerCase().includes("umrah")) ??
+    trips[0];
+  const heroImage = flagship?.cover_image || FALLBACK_HERO;
 
   return (
     <main className="site-shell">
@@ -31,8 +52,8 @@ export default function Home() {
         </motion.div>
         {flagship ? (
           <motion.aside className="hero-trip" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
-            <p>Next sacred journey</p><strong>{flagship.title}</strong><span>{dateRange(flagship)}</span>
-            <div><Clock3 size={16} /> {flagship.durationDays} days · {flagship.nights} nights</div>
+            <p>Next sacred journey</p><strong>{flagship.title}</strong><span>{durationLabel(flagship)}</span>
+            <div><Clock3 size={16} /> {flagship.duration_days} days · {flagship.duration_nights} nights</div>
             <Link href={`/journeys/${flagship.slug}`}>View full journey <ChevronRight size={15} /></Link>
           </motion.aside>
         ) : null}
@@ -56,19 +77,6 @@ export default function Home() {
         </RevealGroup>
       </section>
 
-      <section className="pto-section" id="pto">
-        <Reveal as="div" className="pto-copy" y={20}>
-          <p className="eyebrow eyebrow--light">The PTO-Smart difference</p><h2>See more of the world.<br /><em>Use less PTO.</em></h2>
-          <p>Great travel should fit a real life. Each departure makes its workday impact visible, so you can plan school breaks, federal holidays, and the time that matters most.</p>
-          <p className="caption">PTO estimates assume a typical Monday–Friday U.S. work schedule. Employer and school calendars vary.</p>
-        </Reveal>
-        <RevealGroup as="div" className="pto-stat-grid">
-          <RevealItem as="div"><strong>4</strong><span>typical PTO days<br />for a 9-day escape</span></RevealItem>
-          <RevealItem as="div"><strong>3</strong><span>decision signals<br />at a glance</span></RevealItem>
-          <RevealItem as="div"><strong>1</strong><span>place to compare<br />what your time buys</span></RevealItem>
-        </RevealGroup>
-      </section>
-
       <section className="flagship-section section-pad" id="umrah">
         {flagship ? (
           <>
@@ -78,12 +86,18 @@ export default function Home() {
               y={0}
               role="img"
               aria-label="Makkah scene for the flagship Umrah journey"
-              style={{ backgroundImage: `url(${flagship.heroImage || heroImage})` }}
+              style={{ backgroundImage: `url(${flagship.cover_image || heroImage})` }}
             />
             <Reveal as="div" className="flagship-copy" delay={0.1}>
-              <p className="eyebrow">Flagship Umrah · {flagship.holidayUsed}</p><h2>{flagship.title}</h2><p className="lead">Step away from the noise. Return with a renewed heart.</p>
-              <div className="journey-facts"><span><CalendarDays /> {dateRange(flagship)}</span><span><Clock3 /> {flagship.durationDays} days · {flagship.nights} nights</span><span><Plane /> Depart {flagship.departureAirport ?? "TBC"} · Return {flagship.returnAirport ?? "TBC"}</span></div>
-              <div className="stay-grid">{getStays(flagship.itinerary).length ? getStays(flagship.itinerary).map(stay => <div key={`${stay.location}-${stay.hotel}`}><span>{stay.location}</span><strong>{stay.hotel}</strong><small>{stay.nights} nights</small></div>) : <div className="stay-grid-empty">Hotel details will appear when the trip record is finalized.</div>}</div>
+              <p className="eyebrow">Flagship journey · {flagship.destination?.name}</p><h2>{flagship.title}</h2><p className="lead">Step away from the noise. Return with a renewed heart.</p>
+              <div className="journey-facts"><span><CalendarDays /> {durationLabel(flagship)}</span><span><Clock3 /> {flagship.duration_days} days · {flagship.duration_nights} nights</span><span><Plane /> Depart {flagship.departure_city ?? "TBC"}</span></div>
+              {flagship.halal_features?.length ? (
+                <div className="stay-grid">
+                  {flagship.halal_features.map((feature) => (
+                    <div key={feature}><strong>{feature}</strong></div>
+                  ))}
+                </div>
+              ) : null}
               <div className="flagship-bottom">
                 <Price trip={flagship} emphasis />
                 <div className="flagship-actions">
@@ -91,13 +105,13 @@ export default function Home() {
                   <button className="button button--primary" onClick={() => setSelectedTrip(flagship)}>Reserve your spot <ChevronRight size={16} /></button>
                 </div>
               </div>
-              <p className="quiet-note">Quad occupancy price shown. Triple, double, and single upgrade pricing is shared only when configured.</p>
+              <p className="quiet-note">Pricing shown is per traveler and may vary by departure date.</p>
             </Reveal>
           </>
         ) : isLoading ? (
           <div className="empty-state">Loading the flagship departure…</div>
         ) : (
-          <div className="empty-state">The flagship departure will appear here when it is published in the trip database.</div>
+          <div className="empty-state">The flagship departure will appear here when it is published in the tour catalog.</div>
         )}
       </section>
 

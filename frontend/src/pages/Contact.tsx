@@ -1,14 +1,20 @@
 import { CircleHelp, Mail, MessageCircle, Phone } from "lucide-react";
 import { motion } from "framer-motion";
-import { trpc } from "@/lib/trpc";
 import { SiteHeader, SiteFooter, MobileBookBar } from "@/components/site/SiteChrome";
 import Reveal from "@/components/Reveal";
 import { contactLinks, LeadCapture } from "@/lib/tripUi";
 
+// NOTE: there is no public contact-settings endpoint on the backend yet
+// (the old tRPC `settings.public` query is gone and nothing replaced it).
+// Using the same hardcoded values as SiteChrome.tsx until that API exists.
+const CONTACT = {
+  phone: "214-233-6721",
+  email: "info@halal-travel.com",
+  whatsapp: "12142336721",
+};
+
 export default function Contact() {
-  const { data: publicSettings } = trpc.settings.public.useQuery();
-  const contact = publicSettings ?? { phone: "214-233-6721", email: "info@halal-travel.com", whatsapp: "12142336721" };
-  const contactAction = contactLinks(contact.phone, contact.whatsapp);
+  const contactAction = contactLinks(CONTACT.phone, CONTACT.whatsapp);
 
   return (
     <main className="site-shell">
@@ -29,8 +35,8 @@ export default function Contact() {
           <p>Not sure which trip fits your family, your calendar, or your budget? Reach out below or join our first-access list.</p>
           <div className="contact-options">
             <span><CircleHelp size={15} /> Not sure which trip fits? Tell us below.</span>
-            <a href={`tel:${contactAction.telephone}`}><Phone size={15} /> {contact.phone}</a>
-            <a href={`mailto:${contact.email}`}><Mail size={15} /> {contact.email}</a>
+            <a href={`tel:${contactAction.telephone}`}><Phone size={15} /> {CONTACT.phone}</a>
+            <a href={`mailto:${CONTACT.email}`}><Mail size={15} /> {CONTACT.email}</a>
             <a href={`https://wa.me/${contactAction.whatsapp}`} target="_blank" rel="noreferrer"><MessageCircle size={15} /> Chat on WhatsApp</a>
           </div>
         </Reveal>
