@@ -28,12 +28,15 @@ class AdminEnquiryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AdminCustomerSerializer(serializers.ModelSerializer):
-    booking_count = serializers.IntegerField(source="bookings.count", read_only=True)
+    booking_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["id", "full_name", "email", "phone", "is_staff", "date_joined", "booking_count"]
         read_only_fields = fields
+
+    def get_booking_count(self, obj):
+        return obj.bookings.count()
 
 
 class AdminCustomerListView(generics.ListAPIView):
