@@ -7,7 +7,7 @@ import { SiteHeader, SiteFooter, MobileBookBar } from "@/components/site/SiteChr
 import Reveal, { RevealGroup, RevealItem } from "@/components/Reveal";
 import { Price, DurationMetric, ReservationDialog, durationLabel } from "@/lib/tripUi";
 
-const FALLBACK_HERO = "kaaba-night_d708ab92.jpg";
+const FALLBACK_HERO = "/kaaba-night_d708ab92.jpg";
 
 export default function Destinations() {
   const [trips, setTrips] = useState<Tour[]>([]);
@@ -47,7 +47,7 @@ export default function Destinations() {
     [destinationFilter, trips]
   );
 
-  const heroImage = trips[0]?.cover_image ?? FALLBACK_HERO;
+  const heroImage = trips.find((trip) => trip.cover_image)?.cover_image || FALLBACK_HERO;
 
   return (
     <main className="site-shell">
@@ -70,13 +70,7 @@ export default function Destinations() {
             <div className="filter-group">
               <button className={destinationFilter === "all" ? "is-active" : ""} onClick={() => setDestinationFilter("all")}>All journeys</button>
               {destinations.map((name) => (
-                <button
-                  key={name}
-                  className={destinationFilter === name ? "is-active" : ""}
-                  onClick={() => setDestinationFilter(name)}
-                >
-                  {name}
-                </button>
+                <button key={name} className={destinationFilter === name ? "is-active" : ""} onClick={() => setDestinationFilter(name)}>{name}</button>
               ))}
             </div>
           </Reveal>
@@ -84,24 +78,41 @@ export default function Destinations() {
         {isLoading ? <div className="loading-grid"><span /><span /><span /></div> : null}
         {error ? <p className="error-note">{error}</p> : null}
         <RevealGroup as="div" className="trip-grid">
-          {filteredTrips.map((trip) => (
-            <RevealItem key={trip.id} as="article" className="trip-card">
-              <div className="trip-image" role="img" aria-label={`${trip.destination?.name} travel scene for ${trip.title}`} style={{ backgroundImage: `linear-gradient(180deg, rgba(5,19,20,.08), rgba(5,19,20,.88)), url(${trip.cover_image || heroImage})` }}>
-                {trip.rating ? <span className="status-pill">★ {trip.rating.toFixed(1)} ({trip.review_count})</span> : null}
-              </div>
-              <div className="trip-body">
-                <p className="trip-location">{trip.destination?.name}, {trip.destination?.country}</p>
-                <h3>{trip.title}</h3>
-                <p className="trip-dates">{durationLabel(trip)}</p>
-                <div className="trip-metrics"><Price trip={trip} emphasis /><DurationMetric trip={trip} /></div>
-                <p className="trip-description">{trip.summary}</p>
-                <div className="card-actions">
-                  <Link className="card-detail-link" href={`/journeys/${trip.slug}`}>Journey details <ChevronRight size={15} /></Link>
-                  <button className="card-action" onClick={() => setSelectedTrip(trip)}>Reserve <ChevronRight size={16} /></button>
+          {filteredTrips.map((trip) => {
+            const image = trip.cover_image?.trim() || heroImage;
+            return (
+              <RevealItem key={trip.id} as="article" className="trip-card">
+                <div className="trip-image" role="img" aria-label={`${trip.destination?.name} travel scene for ${trip.title}`}>
+                  <img
+                    src={image}
+                    alt={`${trip.destination?.name} travel scene for ${trip.title}`}
+                    loading="lazy"
+                    decoding="async"
+                    onError={(event) => {
+                      const target = event.currentTarget;
+                      if (target.src !== new URL(FALLBACK_HERO, window.location.href).href) {
+                        target.src = FALLBACK_HERO;
+                      }
+                    }}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,19,20,.08), rgba(5,19,20,.88))" }} />
+                  {trip.rating ? <span className="status-pill">★ {trip.rating.toFixed(1)} ({trip.review_count})</span> : null}
                 </div>
-              </div>
-            </RevealItem>
-          ))}
+                <div className="trip-body">
+                  <p className="trip-location">{trip.destination?.name}, {trip.destination?.country}</p>
+                  <h3>{trip.title}</h3>
+                  <p className="trip-dates">{durationLabel(trip)}</p>
+                  <div className="trip-metrics"><Price trip={trip} emphasis /><DurationMetric trip={trip} /></div>
+                  <p className="trip-description">{trip.summary}</p>
+                  <div className="card-actions">
+                    <Link className="card-detail-link" href={`/journeys/${trip.slug}`}>Journey details <ChevronRight size={15} /></Link>
+                    <button className="card-action" onClick={() => setSelectedTrip(trip)}>Reserve <ChevronRight size={16} /></button>
+                  </div>
+                </div>
+              </RevealItem>
+            );
+          })}
         </RevealGroup>
         {!isLoading && filteredTrips.length === 0 ? <div className="empty-state">No departures currently match those filters. Change your selection or join the first-access list on our contact page.</div> : null}
       </section>
@@ -114,9 +125,9 @@ export default function Destinations() {
           <Link className="button button--sand" href="/contact">Get first access <Compass size={16} /></Link>
         </Reveal>
         <Reveal as="div" className="world-collage" delay={0.15}>
-          <div className="collage-image collage-image--one" role="img" aria-label="Mostar bridge and river scene in Bosnia and Herzegovina" style={{ backgroundImage: "url(bosnia-mostar_053d512e.jpg)" }} />
+          <div className="collage-image collage-image--one" role="img" aria-label="Mostar bridge and river scene in Bosnia and Herzegovina" style={{ backgroundImage: "url(/bosnia-mostar_053d512e.jpg)" }} />
           <div className="collage-card"><span>Muslim-friendly travel</span><strong>More care. More connection. More world.</strong></div>
-          <div className="collage-image collage-image--two" role="img" aria-label="Madinah mosque courtyard scene" style={{ backgroundImage: "url(madinah-courtyard_bded3f4c.jpeg)" }} />
+          <div className="collage-image collage-image--two" role="img" aria-label="Madinah mosque courtyard scene" style={{ backgroundImage: "url(/madinah-courtyard_bded3f4c.jpeg)" }} />
         </Reveal>
       </section>
 
