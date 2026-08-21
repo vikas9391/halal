@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapPin, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { ImagePlus, MapPin, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { adminApi, type AdminTourPayload, type Destination, type Tour } from "@/lib/api";
 
@@ -16,6 +16,7 @@ export default function AdminTours() {
   const [editing, setEditing] = useState<string | null>(null);
   const [destinationForm, setDestinationForm] = useState({ slug: "", name: "", country: "", hero_image: "", short_description: "", latitude: 0, longitude: 0 });
   const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     const [tourData, destinationData] = await Promise.all([adminApi.tours(), adminApi.destinations()]);
@@ -35,8 +36,42 @@ export default function AdminTours() {
   });
   const update = (key: keyof AdminTourPayload, value: unknown) => setForm((current) => ({ ...current, [key]: value }));
 
+  const upload = async (file: File, folder: string) => {
+    setUploading(true); setMessage("");
+    try { return await adminApi.uploadImage(file, folder); }
+    catch (error: any) { setMessage(error?.response?.data?.detail || error?.response?.data?.file?.[0] || "Image upload failed."); return null; }
+    finally { setUploading(false); }
+  };
+
+  const handleCoverUpload = async (file?: File) => {
+    if (!file) return;
+    const result = await upload(file, "halal-tours/tours/covers");
+    if (result) update("cover_image", result.url);
+  };
+
+  const handleGalleryUpload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true); setMessage("");
+    try {
+      const results = [];
+      for (const file of Array.from(files)) {
+        results.push(await adminApi.uploadImage(file, "halal-tours/tours/gallery"));
+      }
+      update("images", [...form.images, ...results.map((item) => ({ url: item.url, alt: form.title || "Tour gallery image" }))]);
+    } catch (error: any) {
+      setMessage(error?.response?.data?.detail || error?.response?.data?.file?.[0] || "Gallery upload failed.");
+    } finally { setUploading(false); }
+  };
+
+  const handleDestinationHeroUpload = async (file?: File) => {
+    if (!file) return;
+    const result = await upload(file, "halal-tours/destinations");
+    if (result) setDestinationForm((current) => ({ ...current, hero_image: result.url }));
+  };
+
   const saveTour = async (event: React.FormEvent) => {
     event.preventDefault(); setMessage("");
+    if (!form.cover_image) { setMessage("Please upload a cover image before saving the tour."); return; }
     try {
       if (editing) await adminApi.updateTour(editing, form);
       else await adminApi.createTour(form);
@@ -45,7 +80,8 @@ export default function AdminTours() {
   };
   const removeTour = async (slug: string) => { if (!confirm("Delete this tour?")) return; await adminApi.deleteTour(slug); await load(); if (editing === slug) reset(); };
   const saveDestination = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault(); setMessage("");
+    if (!destinationForm.hero_image) { setMessage("Please upload a destination hero image before saving."); return; }
     try { await adminApi.createDestination(destinationForm); setDestinationForm({ slug: "", name: "", country: "", hero_image: "", short_description: "", latitude: 0, longitude: 0 }); await load(); setMessage("Destination saved."); }
     catch (error: any) { setMessage(error?.response?.data ? JSON.stringify(error.response.data) : "Unable to save destination."); }
   };
@@ -71,12 +107,22 @@ export default function AdminTours() {
           <label>Currency<input maxLength={3} required value={form.currency} onChange={e=>update("currency",e.target.value.toUpperCase())}/></label>
           <label>Rating<input type="number" min="0" max="5" step="0.1" value={form.rating} onChange={e=>update("rating",Number(e.target.value))}/></label>
           <label>Review count<input type="number" min="0" value={form.review_count} onChange={e=>update("review_count",Number(e.target.value))}/></label>
-          <label className="md:col-span-2">Cover image URL<input required value={form.cover_image} onChange={e=>update("cover_image",e.target.value)}/></label>
+
+          <div className="md:col-span-2 rounded-lg border border-[#e2dacb] p-4">
+            <div className="flex items-center justify-between gap-3"><div><strong>Cover image</strong><p className="text-sm opacity-65">Upload directly to Cloudinary.</p></div><label className="button button--ghost cursor-pointer"><ImagePlus size={15}/> {uploading ? "Uploading…" : "Upload image"}<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={e=>handleCoverUpload(e.target.files?.[0])}/></label></div>
+            {form.cover_image && <div className="mt-3 flex items-center gap-3"><img src={form.cover_image} alt="Tour cover preview" className="h-24 w-40 rounded-lg object-cover border"/><input className="flex-1" value={form.cover_image} readOnly /></div>}
+          </div>
+
           <label className="md:col-span-2">Summary<textarea required rows={4} value={form.summary} onChange={e=>update("summary",e.target.value)}/></label>
           <label className="md:col-span-2">Halal features<input value={form.halal_features.join(", ")} onChange={e=>update("halal_features",e.target.value.split(",").map(x=>x.trim()).filter(Boolean))}/><small>Use: prayer_friendly, certified_halal_food, gender_separated_options, no_alcohol_venues, scholar_led</small></label>
-          <label className="md:col-span-2">Gallery image URLs<textarea rows={3} value={form.images.map(i=>i.url).join("\n")} onChange={e=>update("images",e.target.value.split("\n").map(url=>url.trim()).filter(Boolean).map(url=>({url,alt:form.title})))}/></label>
+
+          <div className="md:col-span-2 rounded-lg border border-[#e2dacb] p-4">
+            <div className="flex items-center justify-between gap-3"><div><strong>Gallery</strong><p className="text-sm opacity-65">Select one or more images. They are uploaded to Cloudinary.</p></div><label className="button button--ghost cursor-pointer"><ImagePlus size={15}/> Add images<input type="file" multiple accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={e=>handleGalleryUpload(e.target.files)}/></label></div>
+            {form.images.length > 0 && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-4">{form.images.map((image,index)=><div key={`${image.url}-${index}`} className="relative"><img src={image.url} alt={image.alt} className="h-28 w-full rounded-lg object-cover border"/><button type="button" className="absolute right-2 top-2 rounded-full bg-white/90 p-1" onClick={()=>update("images",form.images.filter((_,i)=>i!==index))}><Trash2 size={14}/></button></div>)}</div>}
+          </div>
+
           <div className="md:col-span-2"><div className="flex items-center justify-between mb-2"><strong>Itinerary</strong><button type="button" className="text-sm underline" onClick={()=>update("itinerary",[...form.itinerary,{day:form.itinerary.length+1,title:"",description:""}])}><Plus size={14} className="inline"/> Add day</button></div>{form.itinerary.map((item,index)=><div key={index} className="grid gap-2 md:grid-cols-[80px_1fr_2fr_auto] mb-2"><input type="number" min="1" value={item.day} onChange={e=>{const next=[...form.itinerary];next[index]={...item,day:Number(e.target.value)};update("itinerary",next)}}/><input placeholder="Day title" value={item.title} onChange={e=>{const next=[...form.itinerary];next[index]={...item,title:e.target.value};update("itinerary",next)}}/><input placeholder="Description" value={item.description} onChange={e=>{const next=[...form.itinerary];next[index]={...item,description:e.target.value};update("itinerary",next)}}/><button type="button" onClick={()=>update("itinerary",form.itinerary.filter((_,i)=>i!==index))}><Trash2 size={16}/></button></div>)}</div>
-          <div className="md:col-span-2 flex gap-3"><button className="button button--primary" type="submit"><Save size={15}/> {editing ? "Update tour" : "Create tour"}</button><button className="button !bg-[#eee8dc] !text-[#102526]" type="button" onClick={reset}>Clear</button></div>
+          <div className="md:col-span-2 flex gap-3"><button className="button button--primary" type="submit" disabled={uploading}><Save size={15}/> {editing ? "Update tour" : "Create tour"}</button><button className="button !bg-[#eee8dc] !text-[#102526]" type="button" onClick={reset}>Clear</button></div>
         </form>
       </section>
 
@@ -91,11 +137,11 @@ export default function AdminTours() {
           <label>Name<input required value={destinationForm.name} onChange={e=>setDestinationForm({...destinationForm,name:e.target.value})}/></label>
           <label>Slug<input required value={destinationForm.slug} onChange={e=>setDestinationForm({...destinationForm,slug:e.target.value})}/></label>
           <label>Country<input required value={destinationForm.country} onChange={e=>setDestinationForm({...destinationForm,country:e.target.value})}/></label>
-          <label>Hero image URL<input required value={destinationForm.hero_image} onChange={e=>setDestinationForm({...destinationForm,hero_image:e.target.value})}/></label>
+          <div className="md:col-span-2 rounded-lg border border-[#e2dacb] p-4"><div className="flex items-center justify-between gap-3"><div><strong>Hero image</strong><p className="text-sm opacity-65">Upload directly to Cloudinary.</p></div><label className="button button--ghost cursor-pointer"><ImagePlus size={15}/> {uploading ? "Uploading…" : "Upload image"}<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={e=>handleDestinationHeroUpload(e.target.files?.[0])}/></label></div>{destinationForm.hero_image && <div className="mt-3 flex items-center gap-3"><img src={destinationForm.hero_image} alt="Destination hero preview" className="h-24 w-40 rounded-lg object-cover border"/><input className="flex-1" value={destinationForm.hero_image} readOnly /></div>}</div>
           <label className="md:col-span-2">Short description<textarea required rows={3} value={destinationForm.short_description} onChange={e=>setDestinationForm({...destinationForm,short_description:e.target.value})}/></label>
           <label>Latitude<input type="number" step="any" value={destinationForm.latitude} onChange={e=>setDestinationForm({...destinationForm,latitude:Number(e.target.value)})}/></label>
           <label>Longitude<input type="number" step="any" value={destinationForm.longitude} onChange={e=>setDestinationForm({...destinationForm,longitude:Number(e.target.value)})}/></label>
-          <button className="button button--primary md:col-span-2" type="submit"><Plus size={15}/> Add destination</button>
+          <button className="button button--primary md:col-span-2" type="submit" disabled={uploading}><Plus size={15}/> Add destination</button>
         </form>
       </section>
     </main>
