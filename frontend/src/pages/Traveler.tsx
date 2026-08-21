@@ -1,7 +1,7 @@
 import { CalendarDays, ChevronLeft, Plane, Users } from "lucide-react";
 import { Link } from "wouter";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { LoginForm } from "@/components/LoginForm";
 import { bookingsApi } from "@/lib/api";
 

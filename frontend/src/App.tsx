@@ -4,9 +4,11 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider } from "./hooks/useAuth";
 import Admin from "./pages/Admin";
 import AdminGallery from "./pages/AdminGallery";
 import AdminSettings from "./pages/AdminSettings";
+import AdminProfile from "./pages/AdminProfile";
 import Home from "./pages/Home";
 import Destinations from "./pages/Destinations";
 import About from "./pages/About";
@@ -25,6 +27,7 @@ function Router() {
       <Route path={"/admin"} component={Admin} />
       <Route path={"/admin/media"} component={AdminGallery} />
       <Route path={"/admin/settings"} component={AdminSettings} />
+      <Route path={"/admin/profile"} component={AdminProfile} />
       <Route path={"/journeys/:slug"} component={Journey} />
       <Route path={"/traveler"} component={Traveler} />
       <Route path={"/404"} component={NotFound} />
@@ -34,11 +37,6 @@ function Router() {
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
@@ -46,10 +44,12 @@ function App() {
         defaultTheme="light"
         // switchable
       >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

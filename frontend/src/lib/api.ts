@@ -135,6 +135,11 @@ export const authApi = {
     return response.data;
   },
 
+  updateMe: async (data: Partial<Pick<User, "full_name" | "phone">>) => {
+    const response = await api.patch<User>("/accounts/me/", data);
+    return response.data;
+  },
+
   logout: () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");

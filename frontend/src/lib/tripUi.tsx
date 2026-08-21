@@ -1,4 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { LoginForm } from "@/components/LoginForm";
 import { bookingsApi, enquiriesApi, type Tour } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
