@@ -7,7 +7,7 @@ import { SiteHeader, SiteFooter, MobileBookBar } from "@/components/site/SiteChr
 import Reveal, { RevealGroup, RevealItem } from "@/components/Reveal";
 import { Price, ReservationDialog, durationLabel } from "@/lib/tripUi";
 
-const FALLBACK_HERO = "/manus-storage/kaaba-night_d708ab92.jpg";
+const FALLBACK_HERO = "kaaba-night_d708ab92.jpg";
 
 export default function Home() {
   const [trips, setTrips] = useState<Tour[]>([]);

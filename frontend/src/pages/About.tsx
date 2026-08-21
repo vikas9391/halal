@@ -9,7 +9,7 @@ export default function About() {
     <main className="site-shell">
       <SiteHeader />
 
-      <section className="hero" style={{ minHeight: "46vh", backgroundImage: "linear-gradient(90deg, rgba(4,17,18,.93) 0%, rgba(4,17,18,.7) 55%, rgba(4,17,18,.25) 100%), url(/manus-storage/madinah-courtyard_bded3f4c.jpeg)" }} role="img" aria-label="Madinah mosque courtyard at dawn">
+      <section className="hero" style={{ minHeight: "46vh", backgroundImage: "linear-gradient(90deg, rgba(4,17,18,.93) 0%, rgba(4,17,18,.7) 55%, rgba(4,17,18,.25) 100%), url(madinah-courtyard_bded3f4c.jpeg)" }} role="img" aria-label="Madinah mosque courtyard at dawn">
         <motion.div className="hero-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <p className="eyebrow eyebrow--light">How we travel</p>
           <h1>Purpose in every mile.</h1>

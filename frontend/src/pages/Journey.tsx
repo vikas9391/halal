@@ -57,7 +57,7 @@ export default function Journey() {
   return (
     <main className="journey-page">
       <header className="journey-nav"><Link href="/"><ChevronLeft size={16} /> All journeys</Link><Link href="/traveler">Traveler portal</Link></header>
-      <section className="journey-hero" role="img" aria-label={`${trip.destination?.name} image for ${trip.title}`} style={{ backgroundImage: `linear-gradient(90deg,rgba(4,17,18,.9),rgba(4,17,18,.35)),url(${trip.cover_image || "/manus-storage/kaaba-night_d708ab92.jpg"})` }}>
+      <section className="journey-hero" role="img" aria-label={`${trip.destination?.name} image for ${trip.title}`} style={{ backgroundImage: `linear-gradient(90deg,rgba(4,17,18,.9),rgba(4,17,18,.35)),url(${trip.cover_image || "kaaba-night_d708ab92.jpg"})` }}>
         <div>
           <p className="eyebrow eyebrow--light">{trip.destination?.name}, {trip.destination?.country}</p>
           <h1>{trip.title}</h1>

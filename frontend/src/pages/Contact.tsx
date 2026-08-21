@@ -20,7 +20,7 @@ export default function Contact() {
     <main className="site-shell">
       <SiteHeader />
 
-      <section className="hero" style={{ minHeight: "38vh", backgroundImage: "linear-gradient(90deg, rgba(4,17,18,.93) 0%, rgba(4,17,18,.72) 55%, rgba(4,17,18,.3) 100%), url(/manus-storage/bosnia-mostar_053d512e.jpg)" }} role="img" aria-label="Mostar bridge in Bosnia and Herzegovina at sunset">
+      <section className="hero" style={{ minHeight: "38vh", backgroundImage: "linear-gradient(90deg, rgba(4,17,18,.93) 0%, rgba(4,17,18,.72) 55%, rgba(4,17,18,.3) 100%), url(bosnia-mostar_053d512e.jpg)" }} role="img" aria-label="Mostar bridge in Bosnia and Herzegovina at sunset">
         <motion.div className="hero-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <p className="eyebrow eyebrow--light">Get first access</p>
           <h1>The next journey could fit your calendar.</h1>

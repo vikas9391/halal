@@ -7,7 +7,7 @@ import { SiteHeader, SiteFooter, MobileBookBar } from "@/components/site/SiteChr
 import Reveal, { RevealGroup, RevealItem } from "@/components/Reveal";
 import { Price, DurationMetric, ReservationDialog, durationLabel } from "@/lib/tripUi";
 
-const FALLBACK_HERO = "/manus-storage/kaaba-night_d708ab92.jpg";
+const FALLBACK_HERO = "kaaba-night_d708ab92.jpg";
 
 export default function Destinations() {
   const [trips, setTrips] = useState<Tour[]>([]);
@@ -114,9 +114,9 @@ export default function Destinations() {
           <Link className="button button--sand" href="/contact">Get first access <Compass size={16} /></Link>
         </Reveal>
         <Reveal as="div" className="world-collage" delay={0.15}>
-          <div className="collage-image collage-image--one" role="img" aria-label="Mostar bridge and river scene in Bosnia and Herzegovina" style={{ backgroundImage: "url(/manus-storage/bosnia-mostar_053d512e.jpg)" }} />
+          <div className="collage-image collage-image--one" role="img" aria-label="Mostar bridge and river scene in Bosnia and Herzegovina" style={{ backgroundImage: "url(bosnia-mostar_053d512e.jpg)" }} />
           <div className="collage-card"><span>Muslim-friendly travel</span><strong>More care. More connection. More world.</strong></div>
-          <div className="collage-image collage-image--two" role="img" aria-label="Madinah mosque courtyard scene" style={{ backgroundImage: "url(/manus-storage/madinah-courtyard_bded3f4c.jpeg)" }} />
+          <div className="collage-image collage-image--two" role="img" aria-label="Madinah mosque courtyard scene" style={{ backgroundImage: "url(madinah-courtyard_bded3f4c.jpeg)" }} />
         </Reveal>
       </section>
 
