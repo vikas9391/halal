@@ -40,6 +40,30 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -e .
 
+      - name: Fix BasicSR torchvision compatibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import site
+
+          roots = [Path(p) for p in site.getsitepackages()]
+          replacements = 0
+          for root in roots:
+              for path in root.rglob("*.py"):
+                  try:
+                      text = path.read_text(encoding="utf-8")
+                  except (UnicodeDecodeError, OSError):
+                      continue
+                  old = "from torchvision.transforms.functional_tensor import rgb_to_grayscale"
+                  new = "from torchvision.transforms.functional import rgb_to_grayscale"
+                  if old in text:
+                      path.write_text(text.replace(old, new), encoding="utf-8")
+                      print(f"Patched {path}")
+                      replacements += 1
+          if replacements == 0:
+              print("No deprecated functional_tensor import found; continuing.")
+          PY
+
       - name: Download Real-ESRGAN model
         run: |
           mkdir -p /tmp/Real-ESRGAN/weights
@@ -58,8 +82,8 @@ jobs:
             frontend/public/bosnia-mostar_053d512e.jpg
           do
             name="$(basename "$path")"
-            # Start from the earliest committed version so repeated workflow runs do not
-            # repeatedly upscale an already-upscaled image.
+            # Always start from the earliest committed version so repeated workflow runs
+            # do not repeatedly upscale an already-upscaled image.
             source_commit="$(git log --format=%H --follow -- "$path" | tail -n 1)"
             git show "${source_commit}:${path}" > "/tmp/halal-inputs/$name"
 
