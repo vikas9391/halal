@@ -8,6 +8,7 @@ import Reveal, { RevealGroup, RevealItem } from "@/components/Reveal";
 import { Price, DurationMetric, ReservationDialog, durationLabel } from "@/lib/tripUi";
 
 const FALLBACK_HERO = "/kaaba-night_d708ab92.jpg";
+const DESTINATIONS_HERO = "https://img.magnific.com/premium-photo/night-serenity-landscape-kaaba-mecca-16k-400m_1130573-9190.jpg";
 
 export default function Destinations() {
   const [trips, setTrips] = useState<Tour[]>([]);
@@ -47,13 +48,11 @@ export default function Destinations() {
     [destinationFilter, trips]
   );
 
-  const heroImage = trips.find((trip) => trip.cover_image)?.cover_image || FALLBACK_HERO;
-
   return (
     <main className="site-shell">
       <SiteHeader />
 
-      <section className="hero" style={{ minHeight: "42vh", backgroundImage: `linear-gradient(90deg, rgba(4,17,18,.92) 0%, rgba(4,17,18,.68) 55%, rgba(4,17,18,.25) 100%), url(${heroImage})` }} role="img" aria-label="Kaaba at night representing Umrah and world destinations">
+      <section className="hero" style={{ minHeight: "42vh", backgroundImage: `linear-gradient(90deg, rgba(4,17,18,.92) 0%, rgba(4,17,18,.68) 55%, rgba(4,17,18,.25) 100%), url(${DESTINATIONS_HERO})` }} role="img" aria-label="Kaaba at night representing Umrah and world destinations">
         <motion.div className="hero-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <p className="eyebrow eyebrow--light">Umrah & World Journeys</p>
           <h1>Find the time to go.</h1>
@@ -79,7 +78,7 @@ export default function Destinations() {
         {error ? <p className="error-note">{error}</p> : null}
         <RevealGroup as="div" className="trip-grid">
           {filteredTrips.map((trip) => {
-            const image = trip.cover_image?.trim() || heroImage;
+            const image = trip.cover_image?.trim() || FALLBACK_HERO;
             return (
               <RevealItem key={trip.id} as="article" className="trip-card">
                 <div className="trip-image" role="img" aria-label={`${trip.destination?.name} travel scene for ${trip.title}`}>
