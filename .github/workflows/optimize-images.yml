@@ -1,9 +1,14 @@
-name: Enhance Images
+name: AI Enhance Destination Images
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - "frontend/public/kaaba-night_d708ab92.jpg"
+      - "frontend/public/madinah-courtyard_bded3f4c.jpeg"
+      - "frontend/public/bosnia-mostar_053d512e.jpg"
+      - ".github/workflows/optimize-images.yml"
 
 permissions:
   contents: write
@@ -14,69 +19,84 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
-      - name: Install Pillow
-        run: python -m pip install --upgrade Pillow
-
-      - name: Enhance Halal travel images
+      - name: Install PyTorch CPU
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image, ImageEnhance, ImageFilter
+          python -m pip install --upgrade pip
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-          targets = [
-              Path('frontend/public/kaaba-night_d708ab92.jpg'),
-              Path('frontend/public/madinah-courtyard_bded3f4c.jpeg'),
-              Path('frontend/public/bosnia-mostar_053d512e.jpg'),
-          ]
+      - name: Install Real-ESRGAN
+        run: |
+          git clone --depth 1 https://github.com/xinntao/Real-ESRGAN.git /tmp/Real-ESRGAN
+          cd /tmp/Real-ESRGAN
+          python -m pip install basicsr facexlib gfpgan
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
 
-          for path in targets:
-              if not path.exists():
-                  print(f'Missing: {path}')
-                  continue
+      - name: Download Real-ESRGAN model
+        run: |
+          mkdir -p /tmp/Real-ESRGAN/weights
+          curl -L --fail --retry 3 \
+            https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth \
+            -o /tmp/Real-ESRGAN/weights/RealESRGAN_x4plus.pth
 
-              with Image.open(path) as source:
-                  image = source.convert('RGB')
-                  original = image.size
+      - name: AI upscale destination images
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/halal-inputs /tmp/halal-output
 
-                  # Upscale while preserving the original composition.
-                  scale = min(2.0, 2400 / max(image.size))
-                  if scale > 1:
-                      image = image.resize(
-                          (round(image.width * scale), round(image.height * scale)),
-                          Image.Resampling.LANCZOS,
-                      )
+          for path in \
+            frontend/public/kaaba-night_d708ab92.jpg \
+            frontend/public/madinah-courtyard_bded3f4c.jpeg \
+            frontend/public/bosnia-mostar_053d512e.jpg
+          do
+            name="$(basename "$path")"
+            # Start from the earliest committed version so repeated workflow runs do not
+            # repeatedly upscale an already-upscaled image.
+            source_commit="$(git log --format=%H --follow -- "$path" | tail -n 1)"
+            git show "${source_commit}:${path}" > "/tmp/halal-inputs/$name"
 
-                  # Subtle premium-photo enhancement: contrast, color and detail.
-                  image = ImageEnhance.Contrast(image).enhance(1.06)
-                  image = ImageEnhance.Color(image).enhance(1.04)
-                  image = ImageEnhance.Sharpness(image).enhance(1.12)
-                  image = image.filter(ImageFilter.UnsharpMask(radius=1.2, percent=105, threshold=3))
+            rm -f /tmp/halal-output/"${name%.*}"_out.jpg /tmp/halal-output/"${name%.*}"_out.jpeg
+            python /tmp/Real-ESRGAN/inference_realesrgan.py \
+              -n RealESRGAN_x4plus \
+              -i "/tmp/halal-inputs/$name" \
+              -o /tmp/halal-output \
+              --outscale 2 \
+              --tile 256 \
+              --ext jpg \
+              --fp32
 
-                  image.save(
-                      path,
-                      'JPEG',
-                      quality=94,
-                      optimize=True,
-                      progressive=True,
-                      subsampling=0,
-                  )
-                  print(f'Enhanced {path}: {original} -> {image.size}')
+            result="/tmp/halal-output/${name%.*}_out.jpg"
+            if [ ! -f "$result" ]; then
+              echo "Missing Real-ESRGAN output for $name"
+              exit 1
+            fi
+
+            cp "$result" "$path"
+            python - "$path" <<'PY'
+          from PIL import Image
+          import sys
+          p = sys.argv[1]
+          with Image.open(p) as im:
+              print(f"{p}: {im.size[0]}x{im.size[1]}")
           PY
+          done
 
-      - name: Commit enhanced images
+      - name: Commit AI-enhanced images
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/public/kaaba-night_d708ab92.jpg frontend/public/madinah-courtyard_bded3f4c.jpeg frontend/public/bosnia-mostar_053d512e.jpg
           if git diff --cached --quiet; then
-            echo 'No image changes needed.'
+            echo "No image changes needed."
           else
-            git commit -m 'Enhance Halal destination images [skip ci]'
+            git commit -m "AI upscale Halal destination images [skip ci]"
             git push
           fi
