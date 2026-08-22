@@ -1,17 +1,15 @@
-name: Optimize Images
+name: Enhance Images
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths-ignore:
-      - '.github/workflows/optimize-images.yml'
 
 permissions:
   contents: write
 
 jobs:
-  optimize:
+  enhance:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,53 +23,60 @@ jobs:
       - name: Install Pillow
         run: python -m pip install --upgrade Pillow
 
-      - name: Resize and optimize images
+      - name: Enhance Halal travel images
         run: |
           python - <<'PY'
           from pathlib import Path
-          from PIL import Image, ImageOps
+          from PIL import Image, ImageEnhance, ImageFilter
 
-          root = Path('.')
-          extensions = {'.jpg', '.jpeg', '.png', '.webp'}
-          max_width, max_height = 1920, 1080
+          targets = [
+              Path('frontend/public/kaaba-night_d708ab92.jpg'),
+              Path('frontend/public/madinah-courtyard_bded3f4c.jpeg'),
+              Path('frontend/public/bosnia-mostar_053d512e.jpg'),
+          ]
 
-          for path in root.rglob('*'):
-              if not path.is_file() or path.suffix.lower() not in extensions:
+          for path in targets:
+              if not path.exists():
+                  print(f'Missing: {path}')
                   continue
-              if any(part in {'.git', 'node_modules', 'venv', '.venv', '__pycache__'} for part in path.parts):
-                  continue
 
-              try:
-                  with Image.open(path) as image:
-                      image.load()
-                      original_size = image.size
-                      image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+              with Image.open(path) as source:
+                  image = source.convert('RGB')
+                  original = image.size
 
-                      if image.size == original_size and path.stat().st_size < 2_000_000:
-                          continue
+                  # Upscale while preserving the original composition.
+                  scale = min(2.0, 2400 / max(image.size))
+                  if scale > 1:
+                      image = image.resize(
+                          (round(image.width * scale), round(image.height * scale)),
+                          Image.Resampling.LANCZOS,
+                      )
 
-                      if path.suffix.lower() in {'.jpg', '.jpeg'}:
-                          if image.mode not in ('RGB', 'L'):
-                              image = image.convert('RGB')
-                          image.save(path, 'JPEG', quality=88, optimize=True, progressive=True)
-                      elif path.suffix.lower() == '.png':
-                          image.save(path, 'PNG', optimize=True)
-                      else:
-                          image.save(path, 'WEBP', quality=88, method=6)
+                  # Subtle premium-photo enhancement: contrast, color and detail.
+                  image = ImageEnhance.Contrast(image).enhance(1.06)
+                  image = ImageEnhance.Color(image).enhance(1.04)
+                  image = ImageEnhance.Sharpness(image).enhance(1.12)
+                  image = image.filter(ImageFilter.UnsharpMask(radius=1.2, percent=105, threshold=3))
 
-                      print(f'{path}: {original_size} -> {image.size}')
-              except Exception as exc:
-                  print(f'Skipping {path}: {exc}')
+                  image.save(
+                      path,
+                      'JPEG',
+                      quality=94,
+                      optimize=True,
+                      progressive=True,
+                      subsampling=0,
+                  )
+                  print(f'Enhanced {path}: {original} -> {image.size}')
           PY
 
-      - name: Commit optimized images
+      - name: Commit enhanced images
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add frontend/public/kaaba-night_d708ab92.jpg frontend/public/madinah-courtyard_bded3f4c.jpeg frontend/public/bosnia-mostar_053d512e.jpg
           if git diff --cached --quiet; then
             echo 'No image changes needed.'
           else
-            git commit -m 'Optimize image resolutions [skip ci]'
+            git commit -m 'Enhance Halal destination images [skip ci]'
             git push
           fi
