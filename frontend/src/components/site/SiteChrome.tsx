@@ -17,6 +17,7 @@ export function useContactSettings() {
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/destinations", label: "Umrah & Destinations" },
+  { href: "/register/thanksgiving-umrah-2026", label: "November Umrah Registration" },
   { href: "/about", label: "How We Travel" },
   { href: "/contact", label: "Contact" },
 ];
