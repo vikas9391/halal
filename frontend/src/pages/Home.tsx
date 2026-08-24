@@ -45,9 +45,7 @@ export default function Home() {
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.6 }}>Journeys that move you.<br /><em>Travel that keeps you grounded.</em></motion.h1>
           <motion.p className="hero-copy" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.6 }}>Premium Umrah and thoughtfully curated journeys around the world—designed for Muslim travelers, families, and communities who want extraordinary experiences without compromising what matters.</motion.p>
           <motion.div className="hero-actions" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42, duration: 0.6 }}>
-            <Link className="button button--sand" href="/destinations">Explore Umrah <ChevronRight size={16} /></Link>
-            <Link className="button button--ghost" href="/register/thanksgiving-umrah-2026">Register for November Umrah <ChevronRight size={16} /></Link>
-            <Link className="button button--ghost" href="/destinations">Explore the world</Link>
+            <Link className="button button--sand" href="/register/thanksgiving-umrah-2026">Register for UMRAH <ChevronRight size={16} /></Link>
           </motion.div>
           <motion.p className="hero-trust" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.6 }}>GROUP TRAVEL, THOUGHTFULLY DESIGNED</motion.p>
         </motion.div>
