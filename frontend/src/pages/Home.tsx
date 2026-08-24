@@ -102,7 +102,7 @@ export default function Home() {
                 <div className="flagship-actions">
                   <Link className="button button--outline" href={`/journeys/${flagship.slug}`}>View journey</Link>
                   <Link className="button button--primary" href="/register/thanksgiving-umrah-2026">Register now <ChevronRight size={16} /></Link>
-                  <button className="button button--primary" onClick={() => setSelectedTrip(flagship)}>Reserve your spot <ChevronRight size={16} /></button>
+                  <Link className="button button--primary" href="/register/thanksgiving-umrah-2026">Reserve your spot <ChevronRight size={16} /></Link>
                 </div>
               </div>
               <p className="quiet-note">Pricing shown is per traveler and may vary by departure date.</p>
@@ -135,7 +135,6 @@ export default function Home() {
 
       <SiteFooter />
       <MobileBookBar />
-      {selectedTrip ? <ReservationDialog trip={selectedTrip} onClose={() => setSelectedTrip(null)} /> : null}
     </main>
   );
 }
