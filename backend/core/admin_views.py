@@ -1,3 +1,9 @@
+import json
+import os
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+
 from rest_framework import generics, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -81,4 +87,41 @@ class AdminSummaryView(APIView):
                 "captured": Payment.objects.filter(status="captured").count(),
                 "failed": Payment.objects.filter(status="failed").count(),
             },
+        })
+
+
+class AdminJotFormRegistrationListView(APIView):
+    """Proxy JotForm submissions through the authenticated backend so the API key never reaches the browser."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        api_key = os.environ.get("JOTFORM_API_KEY")
+        form_id = os.environ.get("JOTFORM_FORM_ID", "262335830425050")
+        if not api_key:
+            return Response({
+                "configured": False,
+                "message": "JOTFORM_API_KEY is not configured on the backend.",
+                "submissions": [],
+            }, status=503)
+
+        query = urlencode({"apiKey": api_key, "limit": "100", "orderby": "created_at"})
+        url = f"https://api.jotform.com/form/{form_id}/submissions?{query}"
+        try:
+            request_obj = Request(url, headers={"Accept": "application/json", "User-Agent": "HalalTours/1.0"})
+            with urlopen(request_obj, timeout=15) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+            return Response({
+                "configured": True,
+                "message": f"Unable to retrieve JotForm submissions: {exc}",
+                "submissions": [],
+            }, status=502)
+
+        submissions = payload.get("content", []) if isinstance(payload, dict) else []
+        return Response({
+            "configured": True,
+            "form_id": form_id,
+            "form_url": f"https://form.jotform.com/{form_id}",
+            "count": len(submissions),
+            "submissions": submissions,
         })
