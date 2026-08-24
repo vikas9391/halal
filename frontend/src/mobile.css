@@ -1,0 +1,92 @@
+/* Mobile-first overrides for the public Halal Tours website. */
+
+@media (max-width: 900px) {
+  .site-header { height: 68px; padding: 0 16px; gap: 12px; }
+  .brand { gap: 8px; }
+  .brand-mark { width: 29px; height: 29px; }
+  .brand b { font-size: 11px; }
+  .brand small { font-size: 6px; }
+  .site-header > .flex { margin-left: auto; }
+  .header-cta { padding: 10px 11px; font-size: 8px; }
+  .header-cta svg { display: none; }
+  .menu-button { display: grid; place-items: center; width: 42px; height: 42px; padding: 8px; }
+  .main-nav { position: absolute; top: 68px; left: 0; right: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 16px 16px; background: #071a1c; border-top: 1px solid rgba(216,186,125,.18); box-shadow: 0 18px 32px rgba(0,0,0,.2); }
+  .main-nav.main-nav--open { display: flex; }
+  .main-nav a { padding: 13px 6px; font-size: 11px; border-bottom: 1px solid rgba(247,243,233,.08); }
+  .main-nav a::after { display: none; }
+
+  .hero { min-height: auto; padding: 72px 20px 42px; align-items: flex-start; background-position: 62% center; }
+  .hero-content { max-width: 100%; }
+  .hero h1 { font-size: clamp(42px, 13vw, 64px); line-height: .98; margin-bottom: 20px; }
+  .hero-copy { font-size: 14px; line-height: 1.65; }
+  .hero-actions { margin-top: 24px; width: 100%; }
+  .hero-actions .button { width: 100%; min-height: 50px; }
+  .hero-trust { margin-top: 28px; line-height: 1.5; }
+  .hero-trip { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 30px; padding: 18px; }
+  .hero-trip strong { font-size: 22px; }
+
+  .value-strip { display: grid; grid-template-columns: 1fr 1fr; padding: 0; }
+  .value-strip span { min-height: 58px; padding: 12px 14px; border-right: 1px solid rgba(247,243,233,.12); border-bottom: 1px solid rgba(247,243,233,.12); font-size: 10px; }
+  .value-strip span:nth-child(2n) { border-right: 0; }
+  .value-strip span:nth-last-child(-n+2) { border-bottom: 0; }
+
+  .section-pad { padding: 58px 18px; }
+  .section-intro h2, .departures h2, .flagship-copy h2, .included h2, .first-access h2 { font-size: clamp(36px, 11vw, 52px); }
+  .two-cards, .trip-grid, .loading-grid { grid-template-columns: 1fr; }
+  .two-cards { margin-top: 30px; }
+  .way-card { min-height: 330px; padding: 30px 24px; }
+  .way-card h3 { font-size: 44px; }
+
+  .pto-section { grid-template-columns: 1fr; gap: 36px; padding: 58px 18px; }
+  .pto-copy h2 { font-size: clamp(40px, 11vw, 56px); }
+  .pto-stat-grid div { min-height: 120px; padding: 20px; }
+  .pto-stat-grid strong { font-size: 54px; }
+
+  .departures-header { display: block; }
+  .departures-header > .text-link { margin-top: 22px; }
+  .filter-bar { display: block; margin-top: 30px; }
+  .filter-group { margin-bottom: 12px; }
+  .filter-group button, .pto-filter { min-height: 42px; }
+
+  .flagship-section { grid-template-columns: 1fr; }
+  .flagship-photo { min-height: 330px; }
+  .flagship-copy { padding: 42px 20px; }
+  .flagship-bottom { display: block; }
+  .flagship-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 22px; }
+  .flagship-actions .button { width: 100%; }
+
+  .included-grid { grid-template-columns: 1fr !important; }
+  .included-grid article { padding: 22px 0; }
+  footer { padding: 42px 18px 92px !important; display: grid !important; gap: 24px !important; }
+  footer > .flex { flex-wrap: wrap; }
+  .mobile-book { display: flex !important; position: fixed; z-index: 40; left: 14px; right: 14px; bottom: 12px; min-height: 52px; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; background: #d8ba7d; color: #102526; box-shadow: 0 12px 30px rgba(4,17,18,.25); border-radius: 3px; text-transform: uppercase; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+
+  .journey-hero, .contact-hero, .about-hero { min-height: 420px !important; }
+  .journey-layout, .contact-layout, .about-layout, .two-column, .content-grid { grid-template-columns: 1fr !important; }
+  img { max-width: 100%; }
+}
+
+@media (max-width: 600px) {
+  body { overflow-x: hidden; }
+  .site-shell { width: 100%; overflow-x: clip; }
+  .hero { padding-top: 54px; }
+  .hero h1 { font-size: clamp(39px, 12.5vw, 54px); }
+  .hero-trip { margin-top: 24px; }
+  .hero-trip div { flex-wrap: wrap; }
+  .value-strip span { min-height: 64px; }
+  .section-pad { padding-left: 16px; padding-right: 16px; }
+  .way-card { min-height: 300px; }
+  .trip-image { height: 220px; }
+  .trip-body { padding: 18px; }
+  .flagship-photo { min-height: 280px; }
+  .flagship-copy { padding: 36px 16px; }
+
+  .registration-section { padding: 34px 0 60px !important; }
+  .registration-intro { padding: 0 16px; }
+  .registration-form-shell { width: 100vw !important; max-width: none !important; margin-left: calc(50% - 50vw) !important; border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
+  .registration-form-shell iframe { display: block; width: 100% !important; min-width: 100% !important; max-width: 100% !important; border: 0 !important; }
+  .button { min-height: 48px; }
+  input, textarea, select { max-width: 100%; }
+}
+
+@media (min-width: 901px) { .mobile-book { display: none !important; } }
