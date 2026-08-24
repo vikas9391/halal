@@ -22,6 +22,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Journey from "./pages/Journey";
 import Traveler from "./pages/Traveler";
+import UmrahRegistration from "./pages/UmrahRegistration";
 
 function Router() {
   return <Switch>
@@ -31,6 +32,7 @@ function Router() {
     <Route path="/destinations" component={Destinations} />
     <Route path="/about" component={About} />
     <Route path="/contact" component={Contact} />
+    <Route path="/register/thanksgiving-umrah-2026" component={UmrahRegistration} />
     <Route path="/admin" component={Admin} />
     <Route path="/admin/tours" component={AdminTours} />
     <Route path="/admin/departures" component={AdminDepartures} />
