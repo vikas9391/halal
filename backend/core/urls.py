@@ -5,6 +5,7 @@ from .admin_views import (
     AdminCustomerListView,
     AdminEnquiryDetailView,
     AdminEnquiryListView,
+    AdminJotFormRegistrationListView,
     AdminPaymentListView,
     AdminSummaryView,
 )
@@ -18,4 +19,5 @@ urlpatterns = [
     path("admin/enquiries/<int:pk>/", AdminEnquiryDetailView.as_view(), name="admin-enquiry-detail"),
     path("admin/customers/", AdminCustomerListView.as_view(), name="admin-customers"),
     path("admin/payments/", AdminPaymentListView.as_view(), name="admin-payments"),
+    path("admin/jotform-registrations/", AdminJotFormRegistrationListView.as_view(), name="admin-jotform-registrations"),
 ]
